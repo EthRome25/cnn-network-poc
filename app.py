@@ -1,7 +1,7 @@
 import io
 import base64
 import os
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from flask import Flask, request, jsonify
 from PIL import Image
@@ -11,6 +11,8 @@ matplotlib.use("Agg")  # non-GUI backend for server environments
 import matplotlib.pyplot as plt
 
 from tensorflow import keras
+
+from training_service import TrainParams, train_model_service
 
 # Configuration
 MODEL_PATH = os.environ.get("MODEL_PATH", os.path.join(os.path.dirname(__file__), "trained-model.keras"))
@@ -96,7 +98,7 @@ def plot_prediction(image: Image.Image, labels: List[str], probs: List[float]) -
 def index():
     return jsonify({
         "status": "ok",
-        "message": "Send a POST multipart/form-data with field 'file' to /predict"
+        "message": "Send a POST multipart/form-data with field 'file' to /predict; POST JSON to /retrain to train a fresh model"
     })
 
 
@@ -149,6 +151,50 @@ def predict_endpoint():
         "predicted_label": predicted_label,
         "probabilities": prob_map,
         "plot_base64_png": plot_b64
+    })
+
+
+@app.post("/retrain")
+def retrain_endpoint():
+    global _model, _labels, MODEL_PATH, IMAGE_SIZE
+    # Parse optional JSON body
+    body: Dict[str, Any] = request.get_json(silent=True) or {}
+
+    # Build TrainParams from provided fields with defaults
+    params = TrainParams(
+        data_dir=body.get('data_dir', TrainParams().data_dir),
+        train_subdir=body.get('train_subdir', TrainParams().train_subdir),
+        test_subdir=body.get('test_subdir', TrainParams().test_subdir),
+        img_size=tuple(body.get('img_size', list(TrainParams().img_size))),
+        batch_size=int(body.get('batch_size', TrainParams().batch_size)),
+        epochs=int(body.get('epochs', TrainParams().epochs)),
+        learning_rate=float(body.get('learning_rate', TrainParams().learning_rate)),
+        base_model_name=str(body.get('base_model_name', TrainParams().base_model_name)),
+        output_model_path=body.get('output_model_path', MODEL_PATH),
+        per_class_limit=body.get('per_class_limit', TrainParams().per_class_limit),
+        validation_split_from_test=float(body.get('validation_split_from_test', TrainParams().validation_split_from_test)),
+    )
+
+    try:
+        result = train_model_service(params)
+    except Exception as e:
+        return jsonify({"error": f"Training failed: {e}"}), 500
+
+    # Refresh in-memory model and labels for subsequent predictions
+    try:
+        MODEL_PATH = result.get('output_model_path', MODEL_PATH)
+        _model = keras.models.load_model(MODEL_PATH)
+        _labels = result.get('classes', _labels)
+        # Also update IMAGE_SIZE used in preprocessing to match training
+        img_size = result.get('used_params', {}).get('img_size')
+        if img_size and isinstance(img_size, (list, tuple)) and len(img_size) == 2:
+            IMAGE_SIZE = (int(img_size[0]), int(img_size[1]))
+    except Exception as e:
+        return jsonify({"warning": f"Model trained but failed to reload for inference: {e}", "details": result}), 200
+
+    return jsonify({
+        "message": "Model retrained successfully",
+        "details": result
     })
 
 
