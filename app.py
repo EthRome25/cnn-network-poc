@@ -157,7 +157,63 @@ def predict_endpoint():
 @app.post("/retrain")
 def retrain_endpoint():
     global _model, _labels, MODEL_PATH, IMAGE_SIZE
-    # Parse optional JSON body
+
+    # If a ZIP file is attached (multipart/form-data), unpack it into the input_data folder
+    try:
+        if 'file' in request.files and request.files['file'].filename:
+            from zipfile import ZipFile, BadZipFile
+            import tempfile
+            import shutil
+
+            upload = request.files['file']
+            filename = upload.filename
+            print(f"[INFO] /retrain received zip file: {filename}")
+
+            # Destination dataset directory (default TrainParams location)
+            data_root = TrainParams().data_dir
+            os.makedirs(data_root, exist_ok=True)
+            print(f"[INFO] Unpacking dataset into: {data_root}")
+
+            # Save to a temporary file first
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
+                upload.save(tmp.name)
+                tmp_path = tmp.name
+
+            extracted_files = 0
+            try:
+                with ZipFile(tmp_path, 'r') as zf:
+                    # Safe extraction preventing path traversal
+                    for member in zf.infolist():
+                        member_path = member.filename
+                        # Skip directory entries cleanly
+                        if member_path.endswith('/'):
+                            continue
+                        # Normalize path
+                        dest_path = os.path.normpath(os.path.join(data_root, member_path))
+                        # Ensure the dest path is inside data_root
+                        if not dest_path.startswith(os.path.normpath(data_root) + os.sep) and os.path.normpath(dest_path) != os.path.normpath(data_root):
+                            print(f"[WARN] Skipping potentially unsafe path in zip: {member_path}")
+                            continue
+                        # Create parent dirs
+                        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                        with zf.open(member, 'r') as src, open(dest_path, 'wb') as dst:
+                            shutil.copyfileobj(src, dst)
+                        extracted_files += 1
+                print(f"[INFO] Unpacked {extracted_files} files from {filename} into {data_root}")
+            except BadZipFile:
+                os.unlink(tmp_path)
+                return jsonify({"error": "Uploaded file is not a valid ZIP archive"}), 400
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+    except Exception as e:
+        # Do not fail retraining entirely if unzip step fails unexpectedly
+        print(f"[ERROR] Failed to process uploaded zip: {e}")
+        return jsonify({"error": f"Failed to unpack uploaded zip: {e}"}), 400
+
+    # Parse optional JSON body (works for application/json). For multipart, defaults are used.
     body: Dict[str, Any] = request.get_json(silent=True) or {}
 
     # Build TrainParams from provided fields with defaults
@@ -175,9 +231,12 @@ def retrain_endpoint():
         validation_split_from_test=float(body.get('validation_split_from_test', TrainParams().validation_split_from_test)),
     )
 
+    print(f"[INFO] Starting training with params: {params}")
     try:
         result = train_model_service(params)
+        print("[INFO] Training completed successfully")
     except Exception as e:
+        print(f"[ERROR] Training failed: {e}")
         return jsonify({"error": f"Training failed: {e}"}), 500
 
     # Refresh in-memory model and labels for subsequent predictions
@@ -189,7 +248,9 @@ def retrain_endpoint():
         img_size = result.get('used_params', {}).get('img_size')
         if img_size and isinstance(img_size, (list, tuple)) and len(img_size) == 2:
             IMAGE_SIZE = (int(img_size[0]), int(img_size[1]))
+        print(f"[INFO] Reloaded trained model from {MODEL_PATH}. Labels: {_labels}. IMAGE_SIZE: {IMAGE_SIZE}")
     except Exception as e:
+        print(f"[WARN] Model trained but failed to reload for inference: {e}")
         return jsonify({"warning": f"Model trained but failed to reload for inference: {e}", "details": result}), 200
 
     return jsonify({
