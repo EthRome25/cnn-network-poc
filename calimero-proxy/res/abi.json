@@ -1,0 +1,167 @@
+{
+  "schema_version": "wasm-abi/1",
+  "types": {
+    "Model": {
+      "kind": "record",
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "name",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "description",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "model_type",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "version",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "file_size",
+          "type": {
+            "kind": "u64"
+          }
+        },
+        {
+          "name": "file_data",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "uploader",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "created_at",
+          "type": {
+            "kind": "u64"
+          }
+        },
+        {
+          "name": "is_public",
+          "type": {
+            "kind": "bool"
+          }
+        },
+        {
+          "name": "prediction_accuracy",
+          "type": {
+            "kind": "u32"
+          }
+        },
+        {
+          "name": "model_params",
+          "type": {
+            "kind": "string"
+          }
+        }
+      ]
+    }
+  },
+  "methods": [
+    {
+      "name": "init",
+      "params": [],
+      "returns": {
+        "kind": "unit"
+      }
+    },
+    {
+      "name": "upload_current_model",
+      "params": [
+        {
+          "name": "name",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "description",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "model_type",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "version",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "file_bytes_base64",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "uploader",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "prediction_accuracy",
+          "type": {
+            "kind": "f32"
+          }
+        },
+        {
+          "name": "date",
+          "type": {
+            "kind": "u64"
+          }
+        },
+        {
+          "name": "model_params",
+          "type": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "is_public",
+          "type": {
+            "kind": "bool"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "string"
+      }
+    },
+    {
+      "name": "get_current_model",
+      "params": [],
+      "returns": {
+        "$ref": "Model"
+      }
+    }
+  ],
+  "events": []
+}
