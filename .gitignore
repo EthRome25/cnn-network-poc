@@ -163,6 +163,5 @@ cython_debug/
 
 poc-venv
 input_data
-trained-model.keras
 
 predict_plot_*.png
