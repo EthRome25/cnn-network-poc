@@ -9,6 +9,10 @@ Additionally, each request saves the same plot as a PNG in the project root for 
 
 <img width="1778" height="979" alt="image" src="https://github.com/user-attachments/assets/2975bfd1-ac78-45ca-a2af-473245be1da7" />
 
+<img width="664" height="454" alt="image" src="https://github.com/user-attachments/assets/6491b617-0226-4dec-9fc2-08c006d9aa76" />
+
+<img width="2770" height="1501" alt="image" src="https://github.com/user-attachments/assets/2a723be5-c19c-4a97-bdf7-536d37bddeaf" />
+
 
 ## Project layout
 - app.py — Flask server with / and /predict endpoints
