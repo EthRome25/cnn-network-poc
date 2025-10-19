@@ -3,7 +3,7 @@ import base64
 import os
 from typing import List, Dict, Any
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from PIL import Image
 import numpy as np
 import matplotlib
@@ -19,6 +19,35 @@ MODEL_PATH = os.environ.get("MODEL_PATH", os.path.join(os.path.dirname(__file__)
 IMAGE_SIZE = (128, 128)  # must match training
 
 app = Flask(__name__)
+
+# CORS handling specifically for /predict
+@app.after_request
+def _add_cors_headers(response):
+    try:
+        if request.path in ('/predict', '/retrain'):
+            req_headers = request.headers.get('Access-Control-Request-Headers', 'Content-Type, Authorization, X-Requested-With')
+            response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin') or '*'
+            response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = req_headers
+            response.headers['Access-Control-Max-Age'] = '86400'
+    except Exception:
+        pass
+    return response
+
+@app.route('/predict', methods=['OPTIONS'])
+def predict_options():
+    # Preflight request
+    resp = make_response('', 204)
+    # Headers will be added by after_request
+    return resp
+
+@app.route('/retrain', methods=['OPTIONS'])
+def retrain_options():
+    # Preflight request
+    resp = make_response('', 204)
+    # Headers will be added by after_request
+    return resp
 
 # Lazy-loaded singleton model
 _model = None

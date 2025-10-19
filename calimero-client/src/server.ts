@@ -14,6 +14,18 @@ app.use(express.json({limit: '50mb'})); // Increase payload limit for large mode
 const config = getConfig();
 const client = new SimpleCalimeroClient(config);
 
+function bumpPatchVersion(v: string): string {
+    try {
+        const parts = (v || '1.0.0').split('.').map(n => parseInt(n, 10));
+        const major = isNaN(parts[0]) ? 1 : parts[0];
+        const minor = isNaN(parts[1]) ? 0 : parts[1];
+        const patch = isNaN(parts[2]) ? 0 : parts[2];
+        return `${major}.${minor}.${patch + 1}`;
+    } catch {
+        return '1.0.1';
+    }
+}
+
 /**
  * GET /model
  * Get the current ML model from the Calimero context
@@ -95,11 +107,24 @@ app.post('/model', async (req, res) => {
         console.log(`   Size: ${file_bytes_base64.length} bytes`);
         console.log("Prediction accuracy: ", prediction_accuracy*100);
 
+        // Determine the effective version by bumping the patch
+        let effectiveVersion: string;
+        try {
+            const current = await client.executeRpc('get_current_model', {});
+            const baseVersion = version || (current && current.version) || '1.0.0';
+            effectiveVersion = bumpPatchVersion(baseVersion);
+        } catch (e) {
+            const baseVersion = version || '1.0.0';
+            effectiveVersion = bumpPatchVersion(baseVersion);
+        }
+
+        console.log(`   Using version: ${effectiveVersion} (auto-bumped)`);
+
         const result = await client.executeRpc('upload_current_model', {
             name,
             description,
             model_type,
-            version,
+            version: effectiveVersion,
             file_bytes_base64,
             uploader,
             prediction_accuracy: prediction_accuracy*100,

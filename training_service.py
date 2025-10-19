@@ -22,7 +22,7 @@ class TrainParams:
     test_subdir: str = 'Testing'
     img_size: Tuple[int, int] = (128, 128)
     batch_size: int = 8
-    epochs: int = 1
+    epochs: int = 3
     learning_rate: float = 0.001
     base_model_name: str = 'MobileNetV2'  # kept same as notebook for speed on CPU
     output_model_path: str = os.path.join(os.path.dirname(__file__), 'trained-model.keras')
