@@ -94,11 +94,11 @@ app.post('/model', async (req, res) => {
             is_public
         } = req.body;
 
-        // Validate required fields
-        if (!name || !description || !model_type || !version || !file_bytes_base64 || !uploader) {
+        // Validate required fields (version is optional; server auto-bumps based on current model)
+        if (!name || !description || !model_type || !file_bytes_base64 || !uploader) {
             return res.status(400).json({
                 success: false,
-                error: 'Missing required fields: name, description, model_type, version, file_bytes_base64, uploader'
+                error: 'Missing required fields: name, description, model_type, file_bytes_base64, uploader'
             });
         }
 
@@ -111,7 +111,7 @@ app.post('/model', async (req, res) => {
         let effectiveVersion: string;
         try {
             const current = await client.executeRpc('get_current_model', {});
-            const baseVersion = version || (current && current.version) || '1.0.0';
+            const baseVersion = (current && current.version) || version || '1.0.0';
             effectiveVersion = bumpPatchVersion(baseVersion);
         } catch (e) {
             const baseVersion = version || '1.0.0';
