@@ -1,0 +1,9 @@
+{
+  "defaultChain": "bellecour",
+  "projectName": "brain-tumor-classification",
+  "template": "Python3.13",
+  "dockerhubUsername": "bartoszsolka",
+  "walletPrivateKey": "YOUR_WALLET_PRIVATE_KEY_HERE",
+  "appSecret": null,
+  "dockerhubAccessToken": "YOUR_DOCKERHUB_ACCESS_TOKEN_HERE"
+}

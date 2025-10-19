@@ -1,0 +1,56 @@
+{
+  "description": {
+    "author": "Your Name",
+    "email": "your.email@example.com",
+    "description": "CNN Brain Tumor MRI Classification Service - A machine learning service that classifies brain tumor MRI images into glioma, meningioma, no tumor, or pituitary tumor categories using a trained CNN model.",
+    "longDescription": "This iApp provides a secure, privacy-preserving brain tumor classification service. It uses a pre-trained CNN model to analyze MRI brain images and classify them into four categories: glioma, meningioma, no tumor, or pituitary tumor. The service runs in a Trusted Execution Environment (TEE) ensuring data privacy and model confidentiality. Users can upload MRI images and receive detailed predictions including class probabilities and visualization plots.",
+    "version": "0.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/yourusername/cnn-network-poc",
+    "website": "https://yourwebsite.com"
+  },
+  "apporder": {
+    "app": "0x0000000000000000000000000000000000000000",
+    "appprice": "1000000000000000000",
+    "volume": "1000",
+    "tag": "0x0000000000000000000000000000000000000000000000000000000000000003",
+    "datasetrestrict": "0x0000000000000000000000000000000000000000",
+    "workerpoolrestrict": "0x0000000000000000000000000000000000000000",
+    "requesterrestrict": "0x0000000000000000000000000000000000000000"
+  },
+  "datasetorder": {
+    "dataset": "0x0000000000000000000000000000000000000000",
+    "datasetprice": "0",
+    "volume": "1000",
+    "tag": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "apprestrict": "0x0000000000000000000000000000000000000000",
+    "workerpoolrestrict": "0x0000000000000000000000000000000000000000",
+    "requesterrestrict": "0x0000000000000000000000000000000000000000"
+  },
+  "workerpoolorder": {
+    "workerpool": "0x0000000000000000000000000000000000000000",
+    "workerpoolprice": "0",
+    "volume": "1000",
+    "tag": "0x0000000000000000000000000000000000000000000000000000000000000003",
+    "category": "0",
+    "trust": "0",
+    "apprestrict": "0x0000000000000000000000000000000000000000",
+    "datasetrestrict": "0x0000000000000000000000000000000000000000",
+    "requesterrestrict": "0x0000000000000000000000000000000000000000"
+  },
+  "requestorder": {
+    "app": "0x0000000000000000000000000000000000000000",
+    "appmaxprice": "1000000000000000000",
+    "dataset": "0x0000000000000000000000000000000000000000",
+    "datasetmaxprice": "0",
+    "workerpool": "0x0000000000000000000000000000000000000000",
+    "workerpoolmaxprice": "0",
+    "tag": "0x0000000000000000000000000000000000000000000000000000000000000003",
+    "category": "0",
+    "trust": "0",
+    "beneficiary": "0x0000000000000000000000000000000000000000",
+    "callback": "0x0000000000000000000000000000000000000000",
+    "params": "{\"iexec_args\":\"--input 0x0000000000000000000000000000000000000000\",\"iexec_input_files\":[\"https://example.com/sample-mri.jpg\"]}",
+    "salt": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}
