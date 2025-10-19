@@ -1,4 +1,6 @@
 import os
+import json
+import time
 from dataclasses import dataclass, asdict
 from typing import Dict, Any, Tuple, List, Optional
 
@@ -10,6 +12,8 @@ from tensorflow.keras.optimizers import Adamax
 from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+import requests
+
 
 @dataclass
 class TrainParams:
@@ -18,7 +22,7 @@ class TrainParams:
     test_subdir: str = 'Testing'
     img_size: Tuple[int, int] = (128, 128)
     batch_size: int = 8
-    epochs: int = 6
+    epochs: int = 1
     learning_rate: float = 0.001
     base_model_name: str = 'MobileNetV2'  # kept same as notebook for speed on CPU
     output_model_path: str = os.path.join(os.path.dirname(__file__), 'trained-model.keras')
@@ -147,4 +151,58 @@ def train_model_service(params: TrainParams) -> Dict[str, Any]:
         'test_score': _pack_score(metrics_names, test_score),
         'used_params': asdict(params),
     }
+
+    # After successful training and saving, send model metadata to external service
+    # If uploading the model fails, do not catch the error; let it propagate to fail the request.
+    # Prefer test accuracy; if missing, fallback to validation, then training
+    def _get_acc(score_dict: Dict[str, float]) -> Optional[float]:
+        for key in ['accuracy', 'acc', 'compile_metrics']:
+            if key in score_dict:
+                return float(score_dict[key])
+        return None
+
+    accuracy = _get_acc(result['test_score']) or _get_acc(result['valid_score']) or _get_acc(result['train_score']) or 0.0
+
+    print(accuracy)
+
+    # Prepare payload (do not include model bytes)
+    # Use ms timestamp to align with server expectations (Date.now())
+    now_ts = int(time.time() * 1000)
+    uploader = os.environ.get('USER') or os.environ.get('USERNAME') or 'training_service'
+    model_name = f"{params.base_model_name}-classifier"
+    description = f"Image classifier trained on {len(classes)} classes with {params.base_model_name}"
+    model_params_payload = {
+        'base_model_name': params.base_model_name,
+        'img_size': list(params.img_size),
+        'epochs': params.epochs,
+        'learning_rate': params.learning_rate,
+        'batch_size': params.batch_size,
+        'per_class_limit': params.per_class_limit,
+        'classes': classes,
+    }
+    payload = {
+        'name': model_name,
+        'description': description,
+        'model_type': 'classifier',
+        'version': '1.0.0',
+        # Send a tiny placeholder to satisfy server-side required field without reading model bytes
+        'file_bytes_base64': "cGxhY2Vob2xkZXI=",  # base64("placeholder")
+        'uploader': uploader,
+        'prediction_accuracy': float(accuracy),
+        'date': now_ts,
+        'model_params': json.dumps(model_params_payload),
+        'is_public': True,
+    }
+
+    url = os.environ.get('MODEL_REGISTRY_URL', 'http://localhost:3420/model')
+    timeout = 15
+
+    resp = requests.post(url, json=payload, timeout=timeout)
+    # Raise for non-2xx responses to fail the request
+    resp.raise_for_status()
+    result['model_registry_response'] = {
+        'status_code': getattr(resp, 'status_code', None),
+        'text': getattr(resp, 'text', '')[:5000],
+    }
+
     return result

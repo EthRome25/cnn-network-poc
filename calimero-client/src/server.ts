@@ -1,14 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import { getConfig } from './config.js';
-import { SimpleCalimeroClient } from './simpleClient.js';
+import {getConfig} from './config.js';
+import {SimpleCalimeroClient} from './simpleClient.js';
 
 const app = express();
 const PORT = process.env.PORT || 3420;
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increase payload limit for large model files
+app.use(express.json({limit: '50mb'})); // Increase payload limit for large model files
 
 // Initialize Calimero client
 const config = getConfig();
@@ -19,38 +19,38 @@ const client = new SimpleCalimeroClient(config);
  * Get the current ML model from the Calimero context
  */
 app.get('/model', async (req, res) => {
-  try {
-    console.log('📥 GET /model - Fetching current model...');
-    
-    const model = await client.executeRpc('get_current_model', {});
-    
-    if (model) {
-      console.log('✅ Model found:', model.name);
-      res.json({
-        success: true,
-        data: model
-      });
-    } else {
-      console.log('⚠️  No model found');
-      res.json({
-        success: true,
-        data: null,
-        message: 'No model is currently stored in the context'
-      });
+    try {
+        console.log('📥 GET /model - Fetching current model...');
+
+        const model = await client.executeRpc('get_current_model', {});
+
+        if (model) {
+            console.log('✅ Model found:', model.name);
+            res.json({
+                success: true,
+                data: model
+            });
+        } else {
+            console.log('⚠️  No model found');
+            res.json({
+                success: true,
+                data: null,
+                message: 'No model is currently stored in the context'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error fetching model:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
-  } catch (error) {
-    console.error('❌ Error fetching model:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
 });
 
 /**
  * POST /model
  * Upload a new ML model to the Calimero context
- * 
+ *
  * Body:
  * {
  *   "name": "Model Name",
@@ -66,63 +66,64 @@ app.get('/model', async (req, res) => {
  * }
  */
 app.post('/model', async (req, res) => {
-  try {
-    console.log('📤 POST /model - Uploading new model...');
-    
-    const {
-      name,
-      description,
-      model_type,
-      version,
-      file_bytes_base64,
-      uploader,
-      prediction_accuracy,
-      date,
-      model_params,
-      is_public
-    } = req.body;
+    try {
+        console.log('📤 POST /model - Uploading new model...');
 
-    // Validate required fields
-    if (!name || !description || !model_type || !version || !file_bytes_base64 || !uploader) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields: name, description, model_type, version, file_bytes_base64, uploader'
-      });
+        const {
+            name,
+            description,
+            model_type,
+            version,
+            file_bytes_base64,
+            uploader,
+            prediction_accuracy,
+            date,
+            model_params,
+            is_public
+        } = req.body;
+
+        // Validate required fields
+        if (!name || !description || !model_type || !version || !file_bytes_base64 || !uploader) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: name, description, model_type, version, file_bytes_base64, uploader'
+            });
+        }
+
+        console.log(`   Model: ${name} v${version}`);
+        console.log(`   Type: ${model_type}`);
+        console.log(`   Size: ${file_bytes_base64.length} bytes`);
+        console.log("Prediction accuracy: ", prediction_accuracy*100);
+
+        const result = await client.executeRpc('upload_current_model', {
+            name,
+            description,
+            model_type,
+            version,
+            file_bytes_base64,
+            uploader,
+            prediction_accuracy: prediction_accuracy*100,
+            date: date ?? Date.now(),
+            model_params: model_params || '{}',
+            is_public: is_public !== undefined ? is_public : true
+        });
+
+        console.log('✅ Model uploaded successfully:', result);
+
+        res.json({
+            success: true,
+            data: {
+                model_id: result,
+                message: 'Model uploaded successfully'
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error uploading model:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
-
-    console.log(`   Model: ${name} v${version}`);
-    console.log(`   Type: ${model_type}`);
-    console.log(`   Size: ${file_bytes_base64.length} bytes`);
-
-    const result = await client.executeRpc('upload_current_model', {
-      name,
-      description,
-      model_type,
-      version,
-      file_bytes_base64,
-      uploader,
-      prediction_accuracy: prediction_accuracy || 0,
-      date: date || Date.now(),
-      model_params: model_params || '{}',
-      is_public: is_public !== undefined ? is_public : true
-    });
-
-    console.log('✅ Model uploaded successfully:', result);
-
-    res.json({
-      success: true,
-      data: {
-        model_id: result,
-        message: 'Model uploaded successfully'
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error uploading model:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
 });
 
 /**
@@ -130,14 +131,14 @@ app.post('/model', async (req, res) => {
  * Health check endpoint
  */
 app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-    context: {
-      contextId: config.contextId,
-      nodeUrl: config.nodeUrl
-    }
-  });
+    res.json({
+        success: true,
+        status: 'healthy',
+        context: {
+            contextId: config.contextId,
+            nodeUrl: config.nodeUrl
+        }
+    });
 });
 
 /**
@@ -145,46 +146,46 @@ app.get('/health', (req, res) => {
  * API info endpoint
  */
 app.get('/', (req, res) => {
-  res.json({
-    name: 'Calimero ML Model API',
-    version: '1.0.0',
-    endpoints: {
-      'GET /': 'API information',
-      'GET /health': 'Health check',
-      'GET /model': 'Get current ML model',
-      'POST /model': 'Upload new ML model'
-    },
-    context: {
-      contextId: config.contextId,
-      applicationId: config.applicationId
-    }
-  });
+    res.json({
+        name: 'Calimero ML Model API',
+        version: '1.0.0',
+        endpoints: {
+            'GET /': 'API information',
+            'GET /health': 'Health check',
+            'GET /model': 'Get current ML model',
+            'POST /model': 'Upload new ML model'
+        },
+        context: {
+            contextId: config.contextId,
+            applicationId: config.applicationId
+        }
+    });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log('\n🚀 Calimero ML Model API Server');
-  console.log('═'.repeat(50));
-  console.log(`📡 Server running on: http://localhost:${PORT}`);
-  console.log(`🌐 Context ID: ${config.contextId}`);
-  console.log(`🔗 Node URL: ${config.nodeUrl}`);
-  console.log('═'.repeat(50));
-  console.log('\n📋 Available endpoints:');
-  console.log(`   GET  http://localhost:${PORT}/`);
-  console.log(`   GET  http://localhost:${PORT}/health`);
-  console.log(`   GET  http://localhost:${PORT}/model`);
-  console.log(`   POST http://localhost:${PORT}/model`);
-  console.log('\n✅ Server is ready!\n');
+    console.log('\n🚀 Calimero ML Model API Server');
+    console.log('═'.repeat(50));
+    console.log(`📡 Server running on: http://localhost:${PORT}`);
+    console.log(`🌐 Context ID: ${config.contextId}`);
+    console.log(`🔗 Node URL: ${config.nodeUrl}`);
+    console.log('═'.repeat(50));
+    console.log('\n📋 Available endpoints:');
+    console.log(`   GET  http://localhost:${PORT}/`);
+    console.log(`   GET  http://localhost:${PORT}/health`);
+    console.log(`   GET  http://localhost:${PORT}/model`);
+    console.log(`   POST http://localhost:${PORT}/model`);
+    console.log('\n✅ Server is ready!\n');
 });
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n\n👋 Shutting down server...');
-  process.exit(0);
+    console.log('\n\n👋 Shutting down server...');
+    process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n\n👋 Shutting down server...');
-  process.exit(0);
+    console.log('\n\n👋 Shutting down server...');
+    process.exit(0);
 });
 
