@@ -7,6 +7,9 @@ This repository contains a simple Flask web server that loads a trained Keras mo
 
 Additionally, each request saves the same plot as a PNG in the project root for debugging (files named predict_plot_YYYYmmdd-HHMMSS-ffffff_PID.png). These files are ignored by Git.
 
+<img width="1778" height="979" alt="image" src="https://github.com/user-attachments/assets/2975bfd1-ac78-45ca-a2af-473245be1da7" />
+
+
 ## Project layout
 - app.py — Flask server with / and /predict endpoints
 - trained-model.keras — Saved Keras model file (must be present or provided via MODEL_PATH)
